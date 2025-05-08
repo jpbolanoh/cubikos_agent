@@ -8,6 +8,6 @@ langchain-openai
 langgraph
 openai
 IPython
-psycopg2
+psycopg2-binary
 python-dotenv==1.1.0
 langchain_core
