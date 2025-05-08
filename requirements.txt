@@ -1,0 +1,13 @@
+ai-data-science-team
+streamlit
+sqlalchemy
+pandas
+asyncio
+langchain
+langchain-openai
+langgraph
+openai
+IPython
+psycopg2
+python-dotenv==1.1.0
+langchain_core
