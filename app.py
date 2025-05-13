@@ -21,7 +21,7 @@ load_dotenv()
 
 # App configuration
 st.set_page_config(page_title="Marketing Database Query Tool", page_icon="📊", layout="wide")
-st.title("Marketing Database Query Tool")
+st.title("Copernico")
 
 # Initialize session state for shared components
 if 'db_agent' not in st.session_state:
@@ -77,8 +77,8 @@ st.session_state.debug_mode = st.sidebar.checkbox("Debug Mode", value=False)
 
 # Create tabs for different functionalities
 tab1, tab2, tab3, tab4 = st.tabs([
-    "Natural Language Query", 
-    "Product-Campaign Correlation", 
+    "Chat", 
+    "Relacion de campañas-producto", 
     "Database Explorer", 
     "Direct SQL"
 ])
