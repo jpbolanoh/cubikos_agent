@@ -119,108 +119,39 @@ def show_correlation_tab(db_agent, conn):
         correlation_question = st.text_area(
             "Haz una pregunta sobre la correlación entre el producto y la campaña seleccionados",
             height=100,
-            placeholder="Ejemplo: ¿Cómo ha afectado esta campaña a las ventas de este producto?"
+            placeholder="Ejemplo: ¿Cómo ha afectado esta campaña a las ventas de este producto?",
+            key="correlation_question_input"
         )
         
-        col1, col2 = st.columns(2)
+        # Si no hay pregunta, sugerir una pregunta predeterminada
+        if not correlation_question:
+            correlation_question = "¿Cómo se relacionan este producto y esta campaña? Proporciona un análisis completo."
         
-        with col1:
-            # Botón para análisis rápido de correlación
-            if st.button("Ejecutar Análisis de Correlación", key="run_correlation"):
-                with st.spinner("Analizando correlación..."):
-                    # Pasar la pregunta del usuario a la función de correlación si está disponible
-                    if hasattr(db_agent, 'execute_correlation_query'):
-                        # Llamar a la función execute_correlation_query actualizada con el parámetro user_question
-                        correlation_result = db_agent.execute_correlation_query(
-                            product_id, 
-                            campaign_id,
-                            user_question=correlation_question if correlation_question else None
-                        )
-                    else:
-                        # Usar como alternativa el método analyze_correlation si execute_correlation_query no está disponible
-                        correlation_result = db_agent.analyze_correlation(product_id, campaign_id)
+        # Botón para enviar pregunta
+        if st.button("Analizar Relación", key="submit_correlation_question"):
+            with st.spinner("Analizando la relación entre producto y campaña..."):
+                # Comprobar si la función execute_correlation_query actualizada está disponible
+                if hasattr(db_agent, 'execute_correlation_query'):
+                    correlation_result = db_agent.execute_correlation_query(
+                        product_id, 
+                        campaign_id,
+                        user_question=correlation_question
+                    )
                     
                     if correlation_result["success"]:
-                        # Mostrar la pregunta del usuario si se proporcionó
-                        if correlation_question:
-                            st.info(f"**Pregunta:** {correlation_question}")
+                        # Mostrar la pregunta del usuario de forma destacada
+                        st.info(f"**Pregunta:** {correlation_question}")
                         
-                        with st.expander("Consulta SQL", expanded=True):
+                        # Ocultar SQL por defecto
+                        with st.expander("Ver Consulta SQL", expanded=False):
                             st.code(correlation_result["sql_query"], language="sql")
                         
-                        # Mostrar información de la campaña si está disponible
-                        if "campaign_insights" in correlation_result and isinstance(correlation_result["campaign_insights"], pd.DataFrame) and not correlation_result["campaign_insights"].empty:
-                            st.subheader("Información de la Campaña")
-                            st.dataframe(correlation_result["campaign_insights"])
-                            
-                            # Añadir botón de descarga
-                            csv = correlation_result["campaign_insights"].to_csv(index=False)
-                            st.download_button(
-                                label="Descargar información de campaña como CSV",
-                                data=csv,
-                                file_name="informacion_campana.csv",
-                                mime="text/csv",
-                            )
-                        
-                        # Mostrar datos del producto si están disponibles
-                        if "product_data" in correlation_result and isinstance(correlation_result["product_data"], pd.DataFrame) and not correlation_result["product_data"].empty:
-                            st.subheader("Información del Producto")
-                            st.dataframe(correlation_result["product_data"])
-                        
-                        # Mostrar pedidos del producto si están disponibles
-                        if "product_orders" in correlation_result and isinstance(correlation_result["product_orders"], pd.DataFrame) and not correlation_result["product_orders"].empty:
-                            st.subheader("Pedidos del Producto")
-                            st.dataframe(correlation_result["product_orders"])
-                            
-                            # Añadir botón de descarga
-                            csv = correlation_result["product_orders"].to_csv(index=False)
-                            st.download_button(
-                                label="Descargar pedidos del producto como CSV",
-                                data=csv,
-                                file_name="pedidos_producto.csv",
-                                mime="text/csv",
-                            )
-                        
-                        # Mostrar pedidos durante la campaña si están disponibles
-                        if "orders_during_campaign" in correlation_result and isinstance(correlation_result["orders_during_campaign"], pd.DataFrame) and not correlation_result["orders_during_campaign"].empty:
-                            st.subheader("Pedidos Durante el Período de la Campaña")
-                            st.dataframe(correlation_result["orders_during_campaign"])
-                            
-                            # Añadir botón de descarga
-                            csv = correlation_result["orders_during_campaign"].to_csv(index=False)
-                            st.download_button(
-                                label="Descargar pedidos durante campaña como CSV",
-                                data=csv,
-                                file_name="pedidos_durante_campana.csv",
-                                mime="text/csv",
-                            )
-                        
+                        # Sección principal de análisis
                         st.subheader("Análisis de Correlación")
                         st.markdown(correlation_result["analysis"])
-                    else:
-                        st.error("El análisis de correlación falló")
-                        st.error(correlation_result["error"])
-        
-        with col2:
-            # Botón para pregunta personalizada de correlación
-            if correlation_question and st.button("Enviar Pregunta", key="submit_correlation_question"):
-                with st.spinner("Procesando tu pregunta de correlación..."):
-                    # Comprobar si la función execute_correlation_query actualizada está disponible
-                    if hasattr(db_agent, 'execute_correlation_query'):
-                        correlation_result = db_agent.execute_correlation_query(
-                            product_id, 
-                            campaign_id,
-                            user_question=correlation_question
-                        )
                         
-                        if correlation_result["success"]:
-                            # Mostrar la pregunta del usuario de forma destacada
-                            st.info(f"**Pregunta:** {correlation_question}")
-                            
-                            with st.expander("Consulta SQL", expanded=True):
-                                st.code(correlation_result["sql_query"], language="sql")
-                            
-                            # Mostrar información de la campaña si está disponible
+                        # Sección de datos en expandibles
+                        with st.expander("Ver datos de la campaña", expanded=False):
                             if "campaign_insights" in correlation_result and isinstance(correlation_result["campaign_insights"], pd.DataFrame) and not correlation_result["campaign_insights"].empty:
                                 st.subheader("Información de la Campaña")
                                 st.dataframe(correlation_result["campaign_insights"])
@@ -232,14 +163,15 @@ def show_correlation_tab(db_agent, conn):
                                     data=csv,
                                     file_name="informacion_campana.csv",
                                     mime="text/csv",
+                                    key=f"download_campaign_insights_{product_id}_{campaign_id}"
                                 )
-                            
-                            # Mostrar datos del producto si están disponibles
+                        
+                        with st.expander("Ver datos del producto", expanded=False):
                             if "product_data" in correlation_result and isinstance(correlation_result["product_data"], pd.DataFrame) and not correlation_result["product_data"].empty:
                                 st.subheader("Información del Producto")
                                 st.dataframe(correlation_result["product_data"])
-                            
-                            # Mostrar pedidos del producto si están disponibles
+                        
+                        with st.expander("Ver pedidos del producto", expanded=False):
                             if "product_orders" in correlation_result and isinstance(correlation_result["product_orders"], pd.DataFrame) and not correlation_result["product_orders"].empty:
                                 st.subheader("Pedidos del Producto")
                                 st.dataframe(correlation_result["product_orders"])
@@ -251,90 +183,109 @@ def show_correlation_tab(db_agent, conn):
                                     data=csv,
                                     file_name="pedidos_producto.csv",
                                     mime="text/csv",
+                                    key=f"download_product_orders_{product_id}_{campaign_id}"
                                 )
-                            
-                            st.subheader("Análisis")
-                            st.markdown(correlation_result["analysis"])
-                        else:
-                            st.error("La consulta falló")
-                            if "error" in correlation_result:
-                                st.error(correlation_result["error"])
-                            else:
-                                st.error("Ocurrió un error desconocido")
+                        
+                        with st.expander("Ver pedidos durante la campaña", expanded=False):
+                            if "orders_during_campaign" in correlation_result and isinstance(correlation_result["orders_during_campaign"], pd.DataFrame) and not correlation_result["orders_during_campaign"].empty:
+                                st.subheader("Pedidos Durante el Período de la Campaña")
+                                st.dataframe(correlation_result["orders_during_campaign"])
+                                
+                                # Añadir botón de descarga
+                                csv = correlation_result["orders_during_campaign"].to_csv(index=False)
+                                st.download_button(
+                                    label="Descargar pedidos durante campaña como CSV",
+                                    data=csv,
+                                    file_name="pedidos_durante_campana.csv",
+                                    mime="text/csv",
+                                    key=f"download_campaign_orders_{product_id}_{campaign_id}"
+                                )
                     else:
-                        # Usar la implementación anterior si execute_correlation_query no está disponible
-                        # Generar una consulta especializada para la pregunta específica sobre este producto y campaña
-                        custom_prompt = f"""
-                        Crea una consulta SQL para responder a esta pregunta específica sobre la correlación entre 
-                        el producto ID {product_id} y la campaña ID {campaign_id}:
+                        st.error("La consulta falló")
+                        if "error" in correlation_result:
+                            st.error(correlation_result["error"])
+                        else:
+                            st.error("Ocurrió un error desconocido")
+                else:
+                    # Usar la implementación anterior si execute_correlation_query no está disponible
+                    # Generar una consulta especializada para la pregunta específica sobre este producto y campaña
+                    custom_prompt = f"""
+                    Crea una consulta SQL para responder a esta pregunta específica sobre la correlación entre 
+                    el producto ID {product_id} y la campaña ID {campaign_id}:
+                    
+                    "{correlation_question}"
+                    
+                    Tablas de productos disponibles: {', '.join([t for t in db_agent.all_tables if 'product' in t.lower()])}
+                    Tablas de campañas disponibles: {', '.join([t for t in db_agent.all_tables if 'campaign' in t.lower()])}
+                    
+                    Devuelve SOLO la consulta SQL sin explicaciones.
+                    """
+                    
+                    # Generar SQL para esta pregunta específica
+                    sql_response = db_agent.llm.invoke(custom_prompt)
+                    custom_sql = sql_response.content.strip()
+                    
+                    # Limpiar el SQL
+                    if custom_sql.startswith("```"):
+                        first_line_end = custom_sql.find("\n")
+                        if first_line_end != -1:
+                            custom_sql = custom_sql[first_line_end+1:]
                         
-                        "{correlation_question}"
-                        
-                        Tablas de productos disponibles: {', '.join([t for t in db_agent.all_tables if 'product' in t.lower()])}
-                        Tablas de campañas disponibles: {', '.join([t for t in db_agent.all_tables if 'campaign' in t.lower()])}
-                        
-                        Devuelve SOLO la consulta SQL sin explicaciones.
-                        """
-                        
-                        # Generar SQL para esta pregunta específica
-                        sql_response = db_agent.llm.invoke(custom_prompt)
-                        custom_sql = sql_response.content.strip()
-                        
-                        # Limpiar el SQL
-                        if custom_sql.startswith("```"):
-                            first_line_end = custom_sql.find("\n")
-                            if first_line_end != -1:
-                                custom_sql = custom_sql[first_line_end+1:]
-                            
-                            if custom_sql.endswith("```"):
-                                custom_sql = custom_sql[:-3].strip()
-                        
-                        # Ejecutar la consulta usando nuestro ejecutor de consulta de correlación personalizado
+                        if custom_sql.endswith("```"):
+                            custom_sql = custom_sql[:-3].strip()
+                    
+                    # Ejecutar la consulta usando nuestro ejecutor de consulta de correlación personalizado
+                    try:
+                        # Primero intenta ejecutar directamente con la conexión SQL
                         try:
-                            # Primero intenta ejecutar directamente con la conexión SQL
-                            try:
-                                with conn.begin():
-                                    # Asegúrate de que el SQL tenga un LIMIT
-                                    if "LIMIT" not in custom_sql.upper():
-                                        custom_sql = custom_sql.rstrip(';') + " LIMIT 100;"
-                                    
-                                    custom_df = pd.read_sql(text(custom_sql), conn)
-                                    
-                                    # Generar análisis
-                                    analysis_prompt = f"""
-                                    Analiza estos resultados para la correlación entre el producto ID {product_id} y la campaña ID {campaign_id}:
-                                    
-                                    Pregunta: {correlation_question}
-                                    
-                                    Datos: {custom_df.head(10).to_string()}
-                                    
-                                    Proporciona información sobre lo que estos datos muestran con respecto a la relación entre el producto y la campaña,
-                                    y responde directamente a la pregunta anterior.
-                                    """
-                                    
-                                    analysis_response = db_agent.llm.invoke(analysis_prompt)
-                                    
-                                    correlation_result = {
-                                        "success": True,
-                                        "sql_query": custom_sql,
-                                        "custom_data": custom_df,  # Usar un nombre de clave diferente
-                                        "analysis": analysis_response.content
-                                    }
-                            except Exception as sql_err:
-                                st.warning(f"La ejecución SQL directa falló: {sql_err}")
-                                st.info("Probando método de ejecución alternativo...")
+                            with conn.begin():
+                                # Asegúrate de que el SQL tenga un LIMIT
+                                if "LIMIT" not in custom_sql.upper():
+                                    custom_sql = custom_sql.rstrip(';') + " LIMIT 100;"
                                 
-                                # Si la ejecución directa falla, usa el método analyze_correlation
-                                correlation_result = db_agent.analyze_correlation(product_id, campaign_id)
-                        
-                            if correlation_result and correlation_result["success"]:
-                                # Mostrar la pregunta del usuario de forma destacada
-                                st.info(f"**Pregunta:** {correlation_question}")
+                                custom_df = pd.read_sql(text(custom_sql), conn)
                                 
-                                with st.expander("Consulta SQL", expanded=True):
-                                    st.code(correlation_result["sql_query"], language="sql")
+                                # Generar análisis
+                                analysis_prompt = f"""
+                                Analiza estos resultados para la correlación entre el producto ID {product_id} y la campaña ID {campaign_id}:
                                 
-                                # Comprobar primero custom_data (de la ejecución SQL directa)
+                                Pregunta: {correlation_question}
+                                
+                                Datos: {custom_df.head(10).to_string()}
+                                
+                                Proporciona información sobre lo que estos datos muestran con respecto a la relación entre el producto y la campaña,
+                                y responde directamente a la pregunta anterior.
+                                """
+                                
+                                analysis_response = db_agent.llm.invoke(analysis_prompt)
+                                
+                                correlation_result = {
+                                    "success": True,
+                                    "sql_query": custom_sql,
+                                    "custom_data": custom_df,  # Usar un nombre de clave diferente
+                                    "analysis": analysis_response.content
+                                }
+                        except Exception as sql_err:
+                            st.warning(f"La ejecución SQL directa falló: {sql_err}")
+                            st.info("Probando método de ejecución alternativo...")
+                            
+                            # Si la ejecución directa falla, usa el método analyze_correlation
+                            correlation_result = db_agent.analyze_correlation(product_id, campaign_id)
+                    
+                        if correlation_result and correlation_result["success"]:
+                            # Mostrar la pregunta del usuario de forma destacada
+                            st.info(f"**Pregunta:** {correlation_question}")
+                            
+                            # Ocultar SQL por defecto
+                            with st.expander("Ver Consulta SQL", expanded=False):
+                                st.code(correlation_result["sql_query"], language="sql")
+                            
+                            # Sección principal de análisis
+                            st.subheader("Análisis de Correlación")
+                            st.markdown(correlation_result["analysis"])
+                            
+                            # Sección de datos en expandibles
+                            with st.expander("Ver resultados de la consulta", expanded=False):
                                 if "custom_data" in correlation_result and isinstance(correlation_result["custom_data"], pd.DataFrame) and not correlation_result["custom_data"].empty:
                                     st.subheader("Resultados de la Consulta")
                                     st.dataframe(correlation_result["custom_data"])
@@ -346,9 +297,10 @@ def show_correlation_tab(db_agent, conn):
                                         data=csv,
                                         file_name="resultados_consulta_personalizada.csv",
                                         mime="text/csv",
+                                        key=f"download_custom_results_{product_id}_{campaign_id}"
                                     )
-                                
-                                # Mostrar información de la campaña si está disponible
+                            
+                            with st.expander("Ver datos de la campaña", expanded=False):
                                 if "campaign_insights" in correlation_result and isinstance(correlation_result["campaign_insights"], pd.DataFrame) and not correlation_result["campaign_insights"].empty:
                                     st.subheader("Información de la Campaña")
                                     st.dataframe(correlation_result["campaign_insights"])
@@ -360,27 +312,35 @@ def show_correlation_tab(db_agent, conn):
                                         data=csv,
                                         file_name="informacion_campana.csv",
                                         mime="text/csv",
+                                        key=f"download_campaign_insights_alt_{product_id}_{campaign_id}"
                                     )
-                                
-                                # Mostrar datos del producto si están disponibles
+                            
+                            with st.expander("Ver datos del producto", expanded=False):
                                 if "product_data" in correlation_result and isinstance(correlation_result["product_data"], pd.DataFrame) and not correlation_result["product_data"].empty:
                                     st.subheader("Información del Producto")
                                     st.dataframe(correlation_result["product_data"])
-                                
-                                # Mostrar pedidos del producto si están disponibles
+                            
+                            with st.expander("Ver pedidos del producto", expanded=False):
                                 if "product_orders" in correlation_result and isinstance(correlation_result["product_orders"], pd.DataFrame) and not correlation_result["product_orders"].empty:
                                     st.subheader("Pedidos del Producto")
                                     st.dataframe(correlation_result["product_orders"])
-                                
-                                st.subheader("Análisis")
-                                st.markdown(correlation_result["analysis"])
+                                    
+                                    # Añadir botón de descarga
+                                    csv = correlation_result["product_orders"].to_csv(index=False)
+                                    st.download_button(
+                                        label="Descargar pedidos del producto como CSV",
+                                        data=csv,
+                                        file_name="pedidos_producto.csv",
+                                        mime="text/csv",
+                                        key=f"download_product_orders_alt_{product_id}_{campaign_id}"
+                                    )
+                        else:
+                            st.error("La consulta falló")
+                            if correlation_result and "error" in correlation_result:
+                                st.error(correlation_result["error"])
                             else:
-                                st.error("La consulta falló")
-                                if correlation_result and "error" in correlation_result:
-                                    st.error(correlation_result["error"])
-                                else:
-                                    st.error("Ocurrió un error desconocido")
-                        except Exception as e:
-                            st.error(f"Error al ejecutar la consulta personalizada: {e}")
+                                st.error("Ocurrió un error desconocido")
+                    except Exception as e:
+                        st.error(f"Error al ejecutar la consulta personalizada: {e}")
     else:
         st.info("Por favor, selecciona tanto un producto como una campaña para analizar su correlación.")
