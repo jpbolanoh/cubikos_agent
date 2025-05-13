@@ -79,6 +79,7 @@ def show_general_query_tab(db_agent, debug_mode=False):
                             data=csv,
                             file_name="resultados_consulta.csv",
                             mime="text/csv",
+                            key="download_csv_button_general_query"
                         )
                     else:
                         # Si no es un DataFrame pero tiene la marca is_dataframe
