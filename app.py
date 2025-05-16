@@ -21,7 +21,7 @@ load_dotenv()
 
 # App configuration
 st.set_page_config(page_title="Marketing Database Query Tool", page_icon="📊", layout="wide")
-st.title("Copernico")
+st.title("Galileo")
 
 # Initialize session state for shared components
 if 'db_agent' not in st.session_state:

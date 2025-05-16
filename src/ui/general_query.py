@@ -36,7 +36,7 @@ def show_general_query_tab(db_agent, debug_mode=False):
     </style>
     """, unsafe_allow_html=True)
     
-    st.header("Copernico")
+    st.header("Galileo")
     
     # Inicializar el historial de mensajes en el estado de la sesión si no existe
     if "messages" not in st.session_state:
